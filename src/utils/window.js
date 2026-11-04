@@ -315,6 +315,10 @@ function setupWindowIpcHandlers(mainWindow, sendToRenderer, geminiSessionRef) {
     });
 
     ipcMain.on('update-keybinds', (event, newKeybinds) => {
+        if (newKeybinds === null || typeof newKeybinds !== 'object') {
+            console.error('[IPC] update-keybinds: invalid keybinds payload');
+            return;
+        }
         if (!mainWindow.isDestroyed()) {
             updateGlobalShortcuts(newKeybinds, mainWindow, sendToRenderer, geminiSessionRef);
         }

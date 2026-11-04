@@ -1,28 +1,19 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import Module from 'module';
-import { execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
+import { buildCompiledSiblings, removeCompiledSiblings } from '../helpers/compiledSiblings';
 
 type IpcHandler = (event: unknown, ...args: unknown[]) => unknown;
 
 const handlers = new Map<string, IpcHandler>();
-const repoRoot = path.join(__dirname, '..', '..');
 
 // gemini.js is plain CommonJS and stays that way for this pass (see Phase 3 plan
-// notes). It directly require()s its already-converted-to-TypeScript siblings
-// (storage, prompts, cloud, transportLogger), so their compiled .js output must
-// exist on disk for this file to load at all — even though the global `pretest`
-// script deletes that exact output so THEIR OWN tests exercise the .ts sources
-// directly. Rebuild here, then delete the same files again afterward so the file
-// system is back to pretest's expected clean state for every other test file.
-// vitest.config.ts turns off file parallelism so this doesn't race those other tests.
-const compiledSiblings = ['src/storage.js', 'src/utils/prompts.js', 'src/utils/transportLogger.js', 'src/utils/cloud.js', 'src/preload.js'];
+// notes). See tests/helpers/compiledSiblings.ts for why this rebuilds and then
+// cleans up the compiled .js siblings it requires but the global pretest deletes.
 
 let gemini: typeof import('../../src/utils/gemini.js');
 
 beforeAll(async () => {
-    execSync('npm run build', { cwd: repoRoot });
+    buildCompiledSiblings();
 
     // vi.mock('electron', ...) does not reliably intercept gemini.js's direct
     // require('electron'), so we patch Node's module loader directly, the same
@@ -53,9 +44,7 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-    for (const file of compiledSiblings) {
-        fs.rmSync(path.join(repoRoot, file), { force: true });
-    }
+    removeCompiledSiblings();
 });
 
 describe('gemini.js IPC parameter validation', () => {
