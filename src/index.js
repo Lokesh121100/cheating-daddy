@@ -49,6 +49,17 @@ app.on('activate', () => {
     }
 });
 
+const VALID_SESSION_ID = /^[0-9]+$/;
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+function isSafeUpdateKey(key) {
+    return typeof key === 'string' && key.length > 0 && !UNSAFE_KEYS.has(key);
+}
+
+function isPlainObject(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 function setupStorageIpcHandlers() {
     // ============ CONFIG ============
     ipcMain.handle('storage:get-config', async () => {
@@ -61,6 +72,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:set-config', async (event, config) => {
+        if (!isPlainObject(config)) {
+            return { success: false, error: 'Invalid config payload' };
+        }
         try {
             storage.setConfig(config);
             return { success: true };
@@ -71,6 +85,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:update-config', async (event, key, value) => {
+        if (!isSafeUpdateKey(key)) {
+            return { success: false, error: 'Invalid config key' };
+        }
         try {
             storage.updateConfig(key, value);
             return { success: true };
@@ -91,6 +108,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:set-credentials', async (event, credentials) => {
+        if (!isPlainObject(credentials)) {
+            return { success: false, error: 'Invalid credentials payload' };
+        }
         try {
             storage.setCredentials(credentials);
             return { success: true };
@@ -149,6 +169,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:set-preferences', async (event, preferences) => {
+        if (!isPlainObject(preferences)) {
+            return { success: false, error: 'Invalid preferences payload' };
+        }
         try {
             storage.setPreferences(preferences);
             return { success: true };
@@ -159,6 +182,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:update-preference', async (event, key, value) => {
+        if (!isSafeUpdateKey(key)) {
+            return { success: false, error: 'Invalid preference key' };
+        }
         try {
             storage.updatePreference(key, value);
             return { success: true };
@@ -179,6 +205,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:set-keybinds', async (event, keybinds) => {
+        if (keybinds !== null && !isPlainObject(keybinds)) {
+            return { success: false, error: 'Invalid keybinds payload' };
+        }
         try {
             storage.setKeybinds(keybinds);
             return { success: true };
@@ -199,6 +228,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:get-session', async (event, sessionId) => {
+        if (typeof sessionId !== 'string' || !VALID_SESSION_ID.test(sessionId)) {
+            return { success: false, error: 'Invalid session ID' };
+        }
         try {
             return { success: true, data: storage.getSession(sessionId) };
         } catch (error) {
@@ -208,6 +240,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:save-session', async (event, sessionId, data) => {
+        if (typeof sessionId !== 'string' || !VALID_SESSION_ID.test(sessionId)) {
+            return { success: false, error: 'Invalid session ID' };
+        }
         try {
             storage.saveSession(sessionId, data);
             return { success: true };
@@ -218,6 +253,9 @@ function setupStorageIpcHandlers() {
     });
 
     ipcMain.handle('storage:delete-session', async (event, sessionId) => {
+        if (typeof sessionId !== 'string' || !VALID_SESSION_ID.test(sessionId)) {
+            return { success: false, error: 'Invalid session ID' };
+        }
         try {
             storage.deleteSession(sessionId);
             return { success: true };
@@ -276,6 +314,19 @@ function setupGeneralIpcHandlers() {
     });
 
     ipcMain.handle('open-external', async (event, url) => {
+        if (typeof url !== 'string') {
+            return { success: false, error: 'Invalid URL' };
+        }
+        let parsed;
+        try {
+            parsed = new URL(url);
+        } catch {
+            return { success: false, error: 'Invalid URL' };
+        }
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+            console.error('[IPC] open-external: rejected non-http(s) URL:', url);
+            return { success: false, error: 'Only http(s) URLs may be opened' };
+        }
         try {
             await shell.openExternal(url);
             return { success: true };
@@ -286,6 +337,10 @@ function setupGeneralIpcHandlers() {
     });
 
     ipcMain.on('update-keybinds', (event, newKeybinds) => {
+        if (newKeybinds === null || typeof newKeybinds !== 'object') {
+            console.error('[IPC] update-keybinds: invalid keybinds payload');
+            return;
+        }
         if (mainWindow) {
             // Also save to storage
             storage.setKeybinds(newKeybinds);
