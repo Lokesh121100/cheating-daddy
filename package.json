@@ -12,7 +12,7 @@
         "lint": "echo \"No linting configured\"",
         "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc --noEmit",
-        "pretest": "node -e \"['src/storage.js','src/utils/prompts.js','src/utils/transportLogger.js'].forEach(f=>require('fs').rmSync(f,{force:true}))\"",
+        "pretest": "node -e \"['src/storage.js','src/utils/prompts.js','src/utils/transportLogger.js','src/utils/cloud.js','src/preload.js'].forEach(f=>require('fs').rmSync(f,{force:true}))\"",
         "test": "vitest run"
     },
     "keywords": [

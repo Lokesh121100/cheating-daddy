@@ -5,7 +5,7 @@
         "moduleResolution": "Node16",
         "strict": true,
         "checkJs": false,
-        "allowJs": false,
+        "allowJs": true,
         "esModuleInterop": true,
         "forceConsistentCasingInFileNames": true,
         "skipLibCheck": true,

@@ -1054,6 +1054,10 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
     global.geminiSessionRef = geminiSessionRef;
 
     ipcMain.handle('initialize-cloud', async (event, token, profile, userContext) => {
+        if (typeof token !== 'string' || token.trim().length === 0) {
+            console.error('[IPC] initialize-cloud: invalid token');
+            return false;
+        }
         try {
             currentProviderMode = 'cloud';
             initializeNewSession(profile);
@@ -1073,6 +1077,10 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
     });
 
     ipcMain.handle('initialize-gemini', async (event, apiKey, customPrompt, profile = 'interview', language = 'en-US') => {
+        if (typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+            console.error('[IPC] initialize-gemini: invalid apiKey');
+            return false;
+        }
         currentProviderMode = 'byok';
         const session = await initializeGeminiSession(apiKey, customPrompt, profile, language);
         if (session) {
@@ -1083,6 +1091,10 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
     });
 
     ipcMain.handle('initialize-local', async (event, localLlmModel, whisperModel, profile, customPrompt) => {
+        if (typeof localLlmModel !== 'string' || typeof whisperModel !== 'string') {
+            console.error('[IPC] initialize-local: invalid model identifiers');
+            return false;
+        }
         currentProviderMode = 'local';
         const success = await getLocalAi().initializeLocalSession(localLlmModel, whisperModel, profile, customPrompt);
         if (!success) {
@@ -1099,7 +1111,10 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
         return cancelled;
     });
 
-    ipcMain.handle('send-audio-content', async (event, { data, mimeType }) => {
+    ipcMain.handle('send-audio-content', async (event, { data, mimeType } = {}) => {
+        if (typeof data !== 'string' || typeof mimeType !== 'string') {
+            return { success: false, error: 'Invalid audio payload' };
+        }
         if (currentProviderMode === 'cloud') {
             try {
                 const pcmBuffer = Buffer.from(data, 'base64');
@@ -1134,7 +1149,10 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
     });
 
     // Handle microphone audio on a separate channel
-    ipcMain.handle('send-mic-audio-content', async (event, { data, mimeType }) => {
+    ipcMain.handle('send-mic-audio-content', async (event, { data, mimeType } = {}) => {
+        if (typeof data !== 'string' || typeof mimeType !== 'string') {
+            return { success: false, error: 'Invalid audio payload' };
+        }
         if (currentProviderMode === 'cloud') {
             try {
                 const pcmBuffer = Buffer.from(data, 'base64');
@@ -1334,6 +1352,9 @@ function setupGeminiIpcHandlers(geminiSessionRef) {
     });
 
     ipcMain.handle('update-google-search-setting', async (event, enabled) => {
+        if (typeof enabled !== 'boolean') {
+            return { success: false, error: 'Invalid setting value' };
+        }
         try {
             console.log('Google Search setting updated to:', enabled);
             // The setting is already saved in localStorage by the renderer
