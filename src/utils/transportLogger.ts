@@ -1,12 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const { getConfigDir } = require('../storage');
+import fs from 'fs';
+import path from 'path';
+import { getConfigDir } from '../storage';
 
-let logStream = null;
+let logStream: fs.WriteStream | null = null;
 let isFirstEvent = true;
-let currentLogPath = null;
+let currentLogPath: string | null = null;
 
-function startTransportLog(sessionId) {
+export function startTransportLog(sessionId: string): void {
     closeTransportLog();
 
     const logsDirectory = path.join(getConfigDir(), 'logs');
@@ -24,7 +24,7 @@ function startTransportLog(sessionId) {
     console.log('Transport log:', currentLogPath);
 }
 
-function logTransportEvent(type, data) {
+export function logTransportEvent(type: string, data: Record<string, unknown>): void {
     if (!logStream) {
         return;
     }
@@ -39,11 +39,11 @@ function logTransportEvent(type, data) {
         logStream.write(prefix + JSON.stringify(event));
         isFirstEvent = false;
     } catch (error) {
-        console.error('Failed to write transport log event:', error.message);
+        console.error('Failed to write transport log event:', error instanceof Error ? error.message : error);
     }
 }
 
-function closeTransportLog() {
+export function closeTransportLog(): void {
     if (!logStream) {
         return;
     }
@@ -54,9 +54,3 @@ function closeTransportLog() {
     currentLogPath = null;
     isFirstEvent = true;
 }
-
-module.exports = {
-    startTransportLog,
-    logTransportEvent,
-    closeTransportLog,
-};
