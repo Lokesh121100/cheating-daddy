@@ -41,6 +41,10 @@ export class AICustomizeView extends LitElement {
         _context: { state: true },
     };
 
+    declare selectedProfile: string;
+    declare onProfileChange: (profile: string) => void;
+    declare _context: string;
+
     constructor() {
         super();
         this.selectedProfile = 'interview';
@@ -59,17 +63,17 @@ export class AICustomizeView extends LitElement {
         }
     }
 
-    _handleProfileChange(e) {
-        this.onProfileChange(e.target.value);
+    _handleProfileChange(e: Event) {
+        this.onProfileChange((e.target as HTMLSelectElement).value);
     }
 
-    async _saveContext(val) {
+    async _saveContext(val: string) {
         this._context = val;
         await cheatingDaddy.storage.updatePreference('customPrompt', val);
     }
 
-    _getProfileName(profile) {
-        const names = {
+    _getProfileName(profile: string) {
+        const names: Record<string, string> = {
             interview: 'Job Interview',
             sales: 'Sales Call',
             meeting: 'Business Meeting',
@@ -111,7 +115,7 @@ export class AICustomizeView extends LitElement {
                                     class="control"
                                     placeholder="Resume details, role requirements, constraints..."
                                     .value=${this._context}
-                                    @input=${e => this._saveContext(e.target.value)}
+                                    @input=${(e: Event) => this._saveContext((e.target as HTMLTextAreaElement).value)}
                                 ></textarea>
                                 <div class="form-help">Sent as context at session start. Keep it short.</div>
                             </div>

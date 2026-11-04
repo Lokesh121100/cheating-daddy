@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import type { Preferences } from './shared/ipc-types';
+
+export type { Preferences };
 
 const CONFIG_VERSION = 1;
 
@@ -17,22 +20,6 @@ export interface AppConfig {
 export interface Credentials {
     apiKey: string;
     groqApiKey: string;
-}
-
-export interface Preferences {
-    customPrompt: string;
-    providerMode: string;
-    selectedProfile: string;
-    selectedLanguage: string;
-    selectedScreenshotInterval: string;
-    selectedImageQuality: string;
-    advancedMode: boolean;
-    audioMode: string;
-    fontSize: string;
-    backgroundTransparency: number;
-    googleSearchEnabled: boolean;
-    localLlmModel: string;
-    whisperModel: string;
 }
 
 export type Keybinds = Record<string, string> | null;
