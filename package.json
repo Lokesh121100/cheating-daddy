@@ -44,6 +44,7 @@
         "@electron/fuses": "^1.8.0",
         "@reforged/maker-appimage": "^5.0.0",
         "@types/node": "^26.6.6",
+        "@types/ws": "^8.18.2",
         "electron": "^30.0.5",
         "typescript": "^7.0.2",
         "vitest": "^5.1.0"

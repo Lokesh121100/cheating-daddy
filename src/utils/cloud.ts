@@ -1,29 +1,40 @@
-const WebSocket = require('ws');
-const { BrowserWindow } = require('electron');
+import WebSocket from 'ws';
+import { BrowserWindow } from 'electron';
 
-let cloudWs = null;
+export interface CloudMessage {
+    type: string;
+    text?: string;
+    message?: string;
+    [key: string]: unknown;
+}
+
+let cloudWs: WebSocket | null = null;
 let isCloudConnected = false;
 let currentCloudResponse = '';
 let currentTranscription = '';
 let isFirstChunk = true;
 let audioChunkCount = 0;
-let onTurnComplete = null;
+let onTurnComplete: ((transcription: string, response: string) => void) | null = null;
 
-function sendToRenderer(channel, data) {
+function sendToRenderer(channel: string, data: unknown): void {
     const windows = BrowserWindow.getAllWindows();
     if (windows.length > 0) {
         windows[0].webContents.send(channel, data);
     }
 }
 
-function setOnTurnComplete(callback) {
+export function setOnTurnComplete(callback: (transcription: string, response: string) => void): void {
     onTurnComplete = callback;
 }
 
-function connectCloud(token, profile, userContext) {
+export function connectCloud(token: string, profile?: string, userContext?: string): Promise<boolean> {
     // Close existing connection
     if (cloudWs) {
-        try { cloudWs.close(); } catch (e) {}
+        try {
+            cloudWs.close();
+        } catch (e) {
+            // ignore
+        }
         cloudWs = null;
         isCloudConnected = false;
     }
@@ -38,7 +49,7 @@ function connectCloud(token, profile, userContext) {
 
         const timeout = setTimeout(() => {
             if (!isCloudConnected) {
-                cloudWs.close();
+                cloudWs?.close();
                 reject(new Error('Cloud connection timeout'));
             }
         }, 10000);
@@ -52,18 +63,18 @@ function connectCloud(token, profile, userContext) {
             const config = JSON.stringify({
                 type: 'set_config',
                 profile: profile || 'interview',
-                user_context: userContext || ''
+                user_context: userContext || '',
             });
-            cloudWs.send(config);
+            cloudWs?.send(config);
             console.log('[Cloud] Config sent:', profile);
 
             sendToRenderer('update-status', 'Cloud connected');
             resolve(true);
         });
 
-        cloudWs.on('message', (data) => {
+        cloudWs.on('message', data => {
             try {
-                const msg = JSON.parse(data.toString());
+                const msg = JSON.parse(data.toString()) as CloudMessage;
                 handleMessage(msg);
             } catch (e) {
                 console.error('[Cloud] Parse error:', e);
@@ -77,7 +88,7 @@ function connectCloud(token, profile, userContext) {
             clearTimeout(timeout);
         });
 
-        cloudWs.on('error', (err) => {
+        cloudWs.on('error', err => {
             console.error('[Cloud] WebSocket error:', err.message);
             isCloudConnected = false;
             clearTimeout(timeout);
@@ -86,7 +97,7 @@ function connectCloud(token, profile, userContext) {
     });
 }
 
-function handleMessage(msg) {
+function handleMessage(msg: CloudMessage): void {
     switch (msg.type) {
         case 'connected':
             console.log('[Cloud] Server confirmed connected');
@@ -132,12 +143,12 @@ function handleMessage(msg) {
     }
 }
 
-function sendCloudAudio(pcmBuffer) {
+export function sendCloudAudio(pcmBuffer: Buffer): void {
     if (!cloudWs || !isCloudConnected || cloudWs.readyState !== WebSocket.OPEN) {
         return;
     }
 
-    cloudWs.send(pcmBuffer, { binary: true }, (err) => {
+    cloudWs.send(pcmBuffer, { binary: true }, err => {
         if (err) {
             console.error('[Cloud] Audio send error:', err.message);
         }
@@ -147,27 +158,31 @@ function sendCloudAudio(pcmBuffer) {
     process.stdout.write('.');
 }
 
-function sendCloudText(text) {
+export function sendCloudText(text: string): void {
     if (cloudWs && isCloudConnected && cloudWs.readyState === WebSocket.OPEN) {
-        cloudWs.send(JSON.stringify({
-            type: 'test_text',
-            text: text
-        }));
+        cloudWs.send(
+            JSON.stringify({
+                type: 'test_text',
+                text: text,
+            })
+        );
     }
 }
 
-function sendCloudImage(base64Data) {
+export function sendCloudImage(base64Data: string): boolean {
     if (!cloudWs || !isCloudConnected || cloudWs.readyState !== WebSocket.OPEN) {
         return false;
     }
-    cloudWs.send(JSON.stringify({
-        type: 'image',
-        image: base64Data
-    }));
+    cloudWs.send(
+        JSON.stringify({
+            type: 'image',
+            image: base64Data,
+        })
+    );
     return true;
 }
 
-function closeCloud() {
+export function closeCloud(): void {
     console.log('[Cloud] Closing. Audio chunks sent:', audioChunkCount);
     if (cloudWs) {
         try {
@@ -188,16 +203,6 @@ function closeCloud() {
     onTurnComplete = null;
 }
 
-function isCloudActive() {
-    return isCloudConnected && cloudWs && cloudWs.readyState === WebSocket.OPEN;
+export function isCloudActive(): boolean {
+    return !!(isCloudConnected && cloudWs && cloudWs.readyState === WebSocket.OPEN);
 }
-
-module.exports = {
-    connectCloud,
-    sendCloudAudio,
-    sendCloudText,
-    sendCloudImage,
-    closeCloud,
-    isCloudActive,
-    setOnTurnComplete,
-};
