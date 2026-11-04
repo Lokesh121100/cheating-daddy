@@ -114,7 +114,7 @@ const DEFAULT_LIMITS: LimitsData = {
 
 // Get the config directory path based on OS
 export function getConfigDir(): string {
-    if (process.env.CHEATING_DADDY_CONFIG_DIR) {
+    if (process.env.VITEST && process.env.CHEATING_DADDY_CONFIG_DIR) {
         return process.env.CHEATING_DADDY_CONFIG_DIR;
     }
 
@@ -451,13 +451,13 @@ export function getModelForToday(): string | null {
     const todayEntry = getTodayLimits();
     const groq = todayEntry.groq!;
 
-    if (groq['gpt-oss-120b'].chars < (groq['gpt-oss-120b'].limit ?? Infinity)) {
+    if (groq['gpt-oss-120b'].chars < (groq['gpt-oss-120b'].limit ?? 0)) {
         return 'openai/gpt-oss-120b';
     }
-    if (groq['gpt-oss-20b'].chars < (groq['gpt-oss-20b'].limit ?? Infinity)) {
+    if (groq['gpt-oss-20b'].chars < (groq['gpt-oss-20b'].limit ?? 0)) {
         return 'openai/gpt-oss-20b';
     }
-    if (groq['kimi-k2-instruct'].chars < (groq['kimi-k2-instruct'].limit ?? Infinity)) {
+    if (groq['kimi-k2-instruct'].chars < (groq['kimi-k2-instruct'].limit ?? 0)) {
         return 'moonshotai/kimi-k2-instruct';
     }
 

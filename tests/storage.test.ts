@@ -41,4 +41,24 @@ describe('storage', () => {
         expect(storage.getTodayLimits().flash.count).toBe(1);
         expect(storage.getTodayLimits().flashLite.count).toBe(0);
     });
+
+    it('ignores CHEATING_DADDY_CONFIG_DIR outside of a test run', async () => {
+        const originalVitestFlag = process.env.VITEST;
+        delete process.env.VITEST;
+        try {
+            const storage = await import('../src/storage.js');
+            expect(storage.getConfigDir()).not.toBe(tempDir);
+        } finally {
+            process.env.VITEST = originalVitestFlag;
+        }
+    });
+
+    it('treats a model with no configured limit as exhausted, not as always available', async () => {
+        const storage = await import('../src/storage.js');
+        storage.initializeStorage();
+        const todayLimits = storage.getTodayLimits();
+        delete todayLimits.groq!['gpt-oss-120b'].limit;
+        storage.setLimits({ data: [todayLimits] });
+        expect(storage.getModelForToday()).not.toBe('openai/gpt-oss-120b');
+    });
 });

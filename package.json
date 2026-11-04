@@ -8,10 +8,11 @@
         "start": "npm run build && electron-forge start",
         "package": "npm run build && electron-forge package",
         "make": "npm run build && electron-forge make",
-        "publish": "electron-forge publish",
+        "publish": "npm run build && electron-forge publish",
         "lint": "echo \"No linting configured\"",
         "build": "tsc -p tsconfig.build.json",
         "typecheck": "tsc --noEmit",
+        "pretest": "node -e \"['src/storage.js','src/utils/prompts.js','src/utils/transportLogger.js'].forEach(f=>require('fs').rmSync(f,{force:true}))\"",
         "test": "vitest run"
     },
     "keywords": [
