@@ -93,3 +93,6 @@ typings/
 out/
 .specstory
 .specstory/
+
+# TypeScript build output compiled in place next to its .ts source
+src/utils/prompts.js

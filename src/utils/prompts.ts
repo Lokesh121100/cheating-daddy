@@ -1,4 +1,14 @@
-const profilePrompts = {
+export type ProfileKey = 'interview' | 'sales' | 'meeting' | 'presentation' | 'negotiation' | 'exam';
+
+export interface ProfilePrompt {
+    intro: string;
+    formatRequirements: string;
+    searchUsage: string;
+    content: string;
+    outputInstructions: string;
+}
+
+const profilePrompts: Record<ProfileKey, ProfilePrompt> = {
     interview: {
         intro: `You are an AI-powered interview assistant, designed to act as a discreet on-screen teleprompter. Your mission is to help the user excel in their job interview by providing concise, impactful, and ready-to-speak answers or key talking points. Analyze the ongoing interview dialogue and, crucially, the 'User-provided context' below.`,
 
@@ -201,7 +211,7 @@ Provide direct exam answers in **markdown format**. Include the question text, t
     },
 };
 
-function buildSystemPrompt(promptParts, customPrompt = '', googleSearchEnabled = true) {
+function buildSystemPrompt(promptParts: ProfilePrompt, customPrompt = '', googleSearchEnabled = true): string {
     const sections = [promptParts.intro, '\n\n', promptParts.formatRequirements];
 
     // Only add search usage section if Google Search is enabled
@@ -214,12 +224,9 @@ function buildSystemPrompt(promptParts, customPrompt = '', googleSearchEnabled =
     return sections.join('');
 }
 
-function getSystemPrompt(profile, customPrompt = '', googleSearchEnabled = true) {
-    const promptParts = profilePrompts[profile] || profilePrompts.interview;
+function getSystemPrompt(profile: string, customPrompt = '', googleSearchEnabled = true): string {
+    const promptParts = profilePrompts[profile as ProfileKey] || profilePrompts.interview;
     return buildSystemPrompt(promptParts, customPrompt, googleSearchEnabled);
 }
 
-module.exports = {
-    profilePrompts,
-    getSystemPrompt,
-};
+export { profilePrompts, getSystemPrompt };
