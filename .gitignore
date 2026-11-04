@@ -98,3 +98,4 @@ out/
 src/utils/prompts.js
 src/storage.js
 src/utils/transportLogger.js
+src/preload.js
