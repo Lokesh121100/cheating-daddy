@@ -10,8 +10,8 @@
         "make": "npm run build && electron-forge make",
         "publish": "npm run build && electron-forge publish",
         "lint": "echo \"No linting configured\"",
-        "build": "tsc -p tsconfig.build.json",
-        "typecheck": "tsc --noEmit",
+        "build": "tsc -p tsconfig.build.json && tsc -p tsconfig.renderer.json",
+        "typecheck": "tsc --noEmit && tsc -p tsconfig.renderer.json --noEmit",
         "pretest": "node -e \"['src/storage.js','src/utils/prompts.js','src/utils/transportLogger.js','src/utils/cloud.js','src/preload.js'].forEach(f=>require('fs').rmSync(f,{force:true}))\"",
         "test": "vitest run"
     },
@@ -46,6 +46,7 @@
         "@types/node": "^26.6.6",
         "@types/ws": "^8.18.2",
         "electron": "^30.0.5",
+        "lit": "^3.3.3",
         "typescript": "^7.0.2",
         "vitest": "^5.1.0"
     }

@@ -99,4 +99,5 @@ src/utils/prompts.js
 src/storage.js
 src/utils/transportLogger.js
 src/preload.js
+src/components/views/sharedPageStyles.js
 src/utils/cloud.js
