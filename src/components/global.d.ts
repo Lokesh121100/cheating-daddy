@@ -3,7 +3,7 @@
 // member, as each component that uses it gets converted -- each addition here
 // is verified against renderer.js's real implementation at conversion time,
 // not guessed ahead of it.
-import type { Preferences } from '../shared/ipc-types';
+import type { Preferences, Keybinds } from '../shared/ipc-types';
 
 interface IpcResult {
     success: boolean;
@@ -13,10 +13,12 @@ interface IpcResult {
 interface CheatingDaddyStorageApi {
     getPreferences(): Promise<Preferences>;
     updatePreference<K extends keyof Preferences>(key: K, value: Preferences[K]): Promise<IpcResult>;
+    getKeybinds(): Promise<Keybinds>;
 }
 
 interface CheatingDaddyGlobal {
     storage: CheatingDaddyStorageApi;
+    isMacOS: boolean;
 }
 
 declare global {

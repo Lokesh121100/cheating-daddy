@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import type { Preferences } from './shared/ipc-types';
+import type { Preferences, Keybinds } from './shared/ipc-types';
 
-export type { Preferences };
+export type { Preferences, Keybinds };
 
 const CONFIG_VERSION = 1;
 
@@ -21,8 +21,6 @@ export interface Credentials {
     apiKey: string;
     groqApiKey: string;
 }
-
-export type Keybinds = Record<string, string> | null;
 
 export interface ModelUsage {
     chars: number;

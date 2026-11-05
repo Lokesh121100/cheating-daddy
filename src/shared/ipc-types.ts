@@ -4,6 +4,8 @@
 // tsconfig (ESM, DOM lib) can import from it without pulling in the wrong
 // global library set.
 
+export type Keybinds = Record<string, string> | null;
+
 export interface Preferences {
     customPrompt: string;
     providerMode: string;

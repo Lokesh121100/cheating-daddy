@@ -96,6 +96,9 @@ export class HelpView extends LitElement {
         keybinds: { type: Object },
     };
 
+    declare onExternalLinkClick: (url: string) => void;
+    declare keybinds: Record<string, string>;
+
     constructor() {
         super();
         this.onExternalLinkClick = () => {};
@@ -132,11 +135,11 @@ export class HelpView extends LitElement {
         };
     }
 
-    _formatKeybind(keybind) {
+    _formatKeybind(keybind: string) {
         return keybind.split('+').map(key => html`<span class="key">${key}</span>`);
     }
 
-    _open(url) {
+    _open(url: string) {
         this.onExternalLinkClick(url);
     }
 
