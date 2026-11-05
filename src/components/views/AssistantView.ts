@@ -309,6 +309,20 @@ export class AssistantView extends LitElement {
         isAnalyzing: { type: Boolean, state: true },
     };
 
+    declare responses: string[];
+    declare currentResponseIndex: number;
+    declare selectedProfile: string;
+    declare onSendText: (message: string) => Promise<void> | void;
+    declare shouldAnimateResponse: boolean;
+    declare isAnalyzing: boolean;
+
+    private _animFrame: number | null;
+    private _responseCountWhenStarted?: number;
+    private handlePreviousResponse?: () => void;
+    private handleNextResponse?: () => void;
+    private handleScrollUp?: () => void;
+    private handleScrollDown?: () => void;
+
     constructor() {
         super();
         this.responses = [];
@@ -319,7 +333,7 @@ export class AssistantView extends LitElement {
         this._animFrame = null;
     }
 
-    getProfileNames() {
+    getProfileNames(): Record<string, string> {
         return {
             interview: 'Job Interview',
             sales: 'Sales Call',
@@ -337,7 +351,7 @@ export class AssistantView extends LitElement {
             : `Listening to your ${profileNames[this.selectedProfile] || 'session'}...`;
     }
 
-    renderMarkdown(content) {
+    renderMarkdown(content: string) {
         if (typeof window !== 'undefined' && window.marked) {
             try {
                 window.marked.setOptions({
@@ -356,14 +370,15 @@ export class AssistantView extends LitElement {
         return content;
     }
 
-    wrapWordsInSpans(html) {
+    wrapWordsInSpans(html: string) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(html, 'text/html');
         const tagsToSkip = ['PRE'];
 
-        function wrap(node) {
-            if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() && !tagsToSkip.includes(node.parentNode.tagName)) {
-                const words = node.textContent.split(/(\s+)/);
+        function wrap(node: ChildNode) {
+            const parentTag = (node.parentNode as Element | null)?.tagName;
+            if (node.nodeType === Node.TEXT_NODE && node.textContent?.trim() && !tagsToSkip.includes(parentTag || '')) {
+                const words = (node.textContent || '').split(/(\s+)/);
                 const frag = document.createDocumentFragment();
                 words.forEach(word => {
                     if (word.trim()) {
@@ -375,8 +390,8 @@ export class AssistantView extends LitElement {
                         frag.appendChild(document.createTextNode(word));
                     }
                 });
-                node.parentNode.replaceChild(frag, node);
-            } else if (node.nodeType === Node.ELEMENT_NODE && !tagsToSkip.includes(node.tagName)) {
+                node.parentNode?.replaceChild(frag, node);
+            } else if (node.nodeType === Node.ELEMENT_NODE && !tagsToSkip.includes((node as Element).tagName)) {
                 Array.from(node.childNodes).forEach(wrap);
             }
         }
@@ -409,7 +424,7 @@ export class AssistantView extends LitElement {
     }
 
     scrollResponseUp() {
-        const container = this.shadowRoot.querySelector('.response-container');
+        const container = this.shadowRoot?.querySelector('.response-container') as HTMLElement | null;
         if (container) {
             const scrollAmount = container.clientHeight * 0.3;
             container.scrollTop = Math.max(0, container.scrollTop - scrollAmount);
@@ -417,7 +432,7 @@ export class AssistantView extends LitElement {
     }
 
     scrollResponseDown() {
-        const container = this.shadowRoot.querySelector('.response-container');
+        const container = this.shadowRoot?.querySelector('.response-container') as HTMLElement | null;
         if (container) {
             const scrollAmount = container.clientHeight * 0.3;
             container.scrollTop = Math.min(container.scrollHeight - container.clientHeight, container.scrollTop + scrollAmount);
@@ -456,7 +471,7 @@ export class AssistantView extends LitElement {
     }
 
     async handleSendText() {
-        const textInput = this.shadowRoot.querySelector('#textInput');
+        const textInput = this.shadowRoot?.querySelector('#textInput') as HTMLInputElement | null;
         if (textInput && textInput.value.trim()) {
             const message = textInput.value.trim();
             textInput.value = '';
@@ -464,7 +479,7 @@ export class AssistantView extends LitElement {
         }
     }
 
-    handleTextKeydown(e) {
+    handleTextKeydown(e: KeyboardEvent) {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             this.handleSendText();
@@ -481,9 +496,10 @@ export class AssistantView extends LitElement {
     }
 
     _startWaveformAnimation() {
-        const canvas = this.shadowRoot.querySelector('.analyze-canvas');
+        const canvas = this.shadowRoot?.querySelector('.analyze-canvas') as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
         const dpr = window.devicePixelRatio || 1;
 
         const rect = canvas.getBoundingClientRect();
@@ -506,7 +522,7 @@ export class AssistantView extends LitElement {
         const perimeter = 2 * straightLen + 2 * arcLen;
 
         // Given a distance along the perimeter, return {x, y, nx, ny} (position + inward normal)
-        const pointOnPerimeter = (d) => {
+        const pointOnPerimeter = (d: number) => {
             d = ((d % perimeter) + perimeter) % perimeter;
             // Top straight: left to right
             if (d < straightLen) {
@@ -540,12 +556,12 @@ export class AssistantView extends LitElement {
         };
 
         // Pre-seed random offsets for stable particles
-        const seeds = [];
+        const seeds: Array<{ pos: number; drift: number; depthSeed: number }> = [];
         for (let i = 0; i < PARTICLE_COUNT; i++) {
             seeds.push({ pos: Math.random(), drift: Math.random(), depthSeed: Math.random() });
         }
 
-        const draw = (now) => {
+        const draw = (now: number) => {
             const elapsed = (now - startTime) / 1000;
             const fade = Math.min(1, elapsed / FADE_IN);
 
@@ -610,16 +626,16 @@ export class AssistantView extends LitElement {
             cancelAnimationFrame(this._animFrame);
             this._animFrame = null;
         }
-        const canvas = this.shadowRoot.querySelector('.analyze-canvas');
+        const canvas = this.shadowRoot?.querySelector('.analyze-canvas') as HTMLCanvasElement | null;
         if (canvas) {
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx?.clearRect(0, 0, canvas.width, canvas.height);
         }
     }
 
     scrollToBottom() {
         setTimeout(() => {
-            const container = this.shadowRoot.querySelector('.response-container');
+            const container = this.shadowRoot?.querySelector('.response-container') as HTMLElement | null;
             if (container) {
                 container.scrollTop = container.scrollHeight;
             }
@@ -627,11 +643,11 @@ export class AssistantView extends LitElement {
     }
 
     firstUpdated() {
-        super.firstUpdated();
+        super.firstUpdated(new Map());
         this.updateResponseContent();
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: Map<string, unknown>) {
         super.updated(changedProperties);
         if (changedProperties.has('responses') || changedProperties.has('currentResponseIndex')) {
             this.updateResponseContent();
@@ -646,14 +662,14 @@ export class AssistantView extends LitElement {
         }
 
         if (changedProperties.has('responses') && this.isAnalyzing) {
-            if (this.responses.length > this._responseCountWhenStarted) {
+            if (this.responses.length > (this._responseCountWhenStarted ?? 0)) {
                 this.isAnalyzing = false;
             }
         }
     }
 
     updateResponseContent() {
-        const container = this.shadowRoot.querySelector('#responseContainer');
+        const container = this.shadowRoot?.querySelector('#responseContainer') as HTMLElement | null;
         if (container) {
             const currentResponse = this.getCurrentResponse();
             const renderedResponse = this.renderMarkdown(currentResponse);

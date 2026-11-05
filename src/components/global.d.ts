@@ -25,9 +25,17 @@ interface CheatingDaddyGlobal {
     getVersion(): Promise<string>;
 }
 
+interface MarkedGlobal {
+    setOptions(options: { breaks?: boolean; gfm?: boolean; sanitize?: boolean }): void;
+    parse(content: string): string;
+}
+
 declare global {
     interface Window {
         cheatingDaddy: CheatingDaddyGlobal;
+        marked: MarkedGlobal;
+        captureManualScreenshot: (imageQuality?: string | null) => Promise<void>;
+        require: (id: 'electron') => typeof import('electron');
     }
 
     const cheatingDaddy: CheatingDaddyGlobal;
