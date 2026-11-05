@@ -16,6 +16,39 @@ export interface AppConfig {
     disableGroqThinking: boolean;
 }
 
+export interface ConversationTurn {
+    timestamp: number;
+    transcription: string;
+    ai_response: string;
+}
+
+export interface ScreenAnalysisEntry {
+    timestamp: number;
+    prompt: string;
+    response: string;
+    model: string;
+}
+
+export interface SessionRecord {
+    sessionId: string;
+    createdAt: number;
+    lastUpdated: number;
+    profile: string | null;
+    customPrompt: string | null;
+    conversationHistory: ConversationTurn[];
+    screenAnalysisHistory: ScreenAnalysisEntry[];
+}
+
+export interface SessionSummary {
+    sessionId: string;
+    createdAt: number;
+    lastUpdated: number;
+    messageCount: number;
+    screenAnalysisCount: number;
+    profile: string | null;
+    customPrompt: string | null;
+}
+
 export interface Preferences {
     customPrompt: string;
     providerMode: string;

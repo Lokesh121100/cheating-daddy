@@ -1,5 +1,6 @@
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { unifiedPageStyles } from './sharedPageStyles.js';
+import type { SessionRecord, SessionSummary, ConversationTurn } from '../../shared/ipc-types';
 
 export class HistoryView extends LitElement {
     static styles = [
@@ -267,6 +268,13 @@ export class HistoryView extends LitElement {
         searchQuery: { type: String },
     };
 
+    declare sessions: SessionSummary[];
+    declare selectedSession: SessionRecord | null;
+    declare selectedSessionId: string | null;
+    declare loading: boolean;
+    declare activeTab: string;
+    declare searchQuery: string;
+
     constructor() {
         super();
         this.sessions = [];
@@ -291,7 +299,7 @@ export class HistoryView extends LitElement {
         }
     }
 
-    async openSession(sessionId) {
+    async openSession(sessionId: string) {
         try {
             const session = await cheatingDaddy.storage.getSession(sessionId);
             if (session) {
@@ -311,26 +319,26 @@ export class HistoryView extends LitElement {
         this.activeTab = 'conversation';
     }
 
-    handleSearchInput(e) {
-        this.searchQuery = e.target.value;
+    handleSearchInput(e: Event) {
+        this.searchQuery = (e.target as HTMLInputElement).value;
     }
 
-    formatDate(timestamp) {
+    formatDate(timestamp: number) {
         const date = new Date(timestamp);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     }
 
-    formatTime(timestamp) {
+    formatTime(timestamp: number) {
         const date = new Date(timestamp);
         return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
     }
 
-    formatTimestamp(timestamp) {
+    formatTimestamp(timestamp: number) {
         const date = new Date(timestamp);
         return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
 
-    getProfileNames() {
+    getProfileNames(): Record<string, string> {
         return {
             interview: 'Job Interview',
             sales: 'Sales Call',
@@ -341,7 +349,7 @@ export class HistoryView extends LitElement {
         };
     }
 
-    _getProfileLabel(session) {
+    _getProfileLabel(session: SessionSummary | SessionRecord) {
         if (session.profile) {
             const names = this.getProfileNames();
             return names[session.profile] || session.profile;
@@ -349,8 +357,8 @@ export class HistoryView extends LitElement {
         return 'Session';
     }
 
-    getSessionPreview(session) {
-        const parts = [];
+    getSessionPreview(session: SessionSummary) {
+        const parts: string[] = [];
         if (session.messageCount > 0) parts.push(`${session.messageCount} messages`);
         if (session.screenAnalysisCount > 0) parts.push(`${session.screenAnalysisCount} screen`);
         if (session.profile) {
@@ -370,9 +378,9 @@ export class HistoryView extends LitElement {
         });
     }
 
-    collectConversation(session) {
-        const messages = [];
-        const history = session.conversationHistory || [];
+    collectConversation(session: SessionRecord) {
+        const messages: Array<{ type: 'user' | 'ai'; content: string; timestamp: number }> = [];
+        const history: ConversationTurn[] = session.conversationHistory || [];
         history.forEach(turn => {
             if (turn.transcription) messages.push({ type: 'user', content: turn.transcription, timestamp: turn.timestamp });
             if (turn.ai_response) messages.push({ type: 'ai', content: turn.ai_response, timestamp: turn.timestamp });
@@ -467,6 +475,8 @@ export class HistoryView extends LitElement {
     }
 
     renderDetailView() {
+        if (!this.selectedSession) return html``;
+
         const conversationCount = this.collectConversation(this.selectedSession).length;
         const screenCount = this.selectedSession?.screenAnalysisHistory?.length || 0;
 

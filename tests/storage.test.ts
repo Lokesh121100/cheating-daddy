@@ -27,7 +27,10 @@ describe('storage', () => {
     it('round-trips a session through save/get/list/delete', async () => {
         const storage = await import('../src/storage.js');
         storage.initializeStorage();
-        storage.saveSession('1700000000', { profile: 'interview', conversationHistory: [{ role: 'user', text: 'hi' }] });
+        storage.saveSession('1700000000', {
+            profile: 'interview',
+            conversationHistory: [{ timestamp: Date.now(), transcription: 'hi', ai_response: 'hello' }],
+        });
         expect(storage.getSession('1700000000')?.profile).toBe('interview');
         expect(storage.getAllSessions()).toHaveLength(1);
         expect(storage.deleteSession('1700000000')).toBe(true);

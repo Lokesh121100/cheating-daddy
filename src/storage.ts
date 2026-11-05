@@ -1,9 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import type { Preferences, Keybinds, AppConfig } from './shared/ipc-types';
+import type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary } from './shared/ipc-types';
 
-export type { Preferences, Keybinds, AppConfig };
+export type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary };
 
 const CONFIG_VERSION = 1;
 
@@ -27,26 +27,6 @@ export interface DailyLimitsEntry {
 
 export interface LimitsData {
     data: DailyLimitsEntry[];
-}
-
-export interface SessionRecord {
-    sessionId: string;
-    createdAt: number;
-    lastUpdated: number;
-    profile: string | null;
-    customPrompt: string | null;
-    conversationHistory: unknown[];
-    screenAnalysisHistory: unknown[];
-}
-
-export interface SessionSummary {
-    sessionId: string;
-    createdAt: number;
-    lastUpdated: number;
-    messageCount: number;
-    screenAnalysisCount: number;
-    profile: string | null;
-    customPrompt: string | null;
 }
 
 // Default values
