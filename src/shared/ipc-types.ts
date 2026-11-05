@@ -6,6 +6,13 @@
 
 export type Keybinds = Record<string, string> | null;
 
+export interface Credentials {
+    apiKey: string;
+    groqApiKey: string;
+    cloudToken: string;
+    openaiKey: string;
+}
+
 export interface AppConfig {
     configVersion: number;
     onboarded: boolean;

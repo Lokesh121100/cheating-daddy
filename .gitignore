@@ -110,3 +110,5 @@ src/components/views/HistoryView.js
 src/components/views/AssistantView.js
 src/components/views/CustomizeView.js
 src/utils/cloud.js
+src/components/app/CheatingDaddyApp.js
+src/components/views/MainView.js

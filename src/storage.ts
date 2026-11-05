@@ -1,16 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary } from './shared/ipc-types';
+import type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary, Credentials } from './shared/ipc-types';
 
-export type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary };
+export type { Preferences, Keybinds, AppConfig, SessionRecord, SessionSummary, Credentials };
 
 const CONFIG_VERSION = 1;
-
-export interface Credentials {
-    apiKey: string;
-    groqApiKey: string;
-}
 
 export interface ModelUsage {
     chars: number;
@@ -43,6 +38,8 @@ const DEFAULT_CONFIG: AppConfig = {
 const DEFAULT_CREDENTIALS: Credentials = {
     apiKey: '',
     groqApiKey: '',
+    cloudToken: '',
+    openaiKey: '',
 };
 
 const DEFAULT_PREFERENCES: Preferences = {

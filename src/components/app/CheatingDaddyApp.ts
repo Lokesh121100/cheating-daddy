@@ -390,6 +390,31 @@ export class CheatingDaddyApp extends LitElement {
         _localAiDownloadProgress: { state: true },
     };
 
+    declare currentView: string;
+    declare statusText: string;
+    declare startTime: number | null;
+    declare isRecording: boolean;
+    declare sessionActive: boolean;
+    declare selectedProfile: string;
+    declare selectedLanguage: string;
+    declare responses: string[];
+    declare currentResponseIndex: number;
+    declare selectedScreenshotInterval: string;
+    declare selectedImageQuality: string;
+    declare layoutMode: string;
+    declare _viewInstances: Map<string, unknown>;
+    declare _isClickThrough: boolean;
+    declare _awaitingNewResponse: boolean;
+    declare shouldAnimateResponse: boolean;
+    declare _storageLoaded: boolean;
+    declare _updateAvailable: boolean;
+    declare _whisperDownloading: boolean;
+    declare _localAiDownloadProgress: { active: boolean; label: string; percentage: number | null };
+
+    private _currentResponseIsComplete: boolean;
+    private _timerInterval: ReturnType<typeof setInterval> | null;
+    private _localVersion: string;
+
     constructor() {
         super();
         this.currentView = 'main';
@@ -430,7 +455,7 @@ export class CheatingDaddyApp extends LitElement {
             const remote = await res.json();
             const remoteVersion = remote.version;
 
-            const toNum = v => v.split('.').map(Number);
+            const toNum = (v: string) => v.split('.').map(Number);
             const [rMaj, rMin, rPatch] = toNum(remoteVersion);
             const [lMaj, lMin, lPatch] = toNum(this._localVersion);
 
@@ -521,21 +546,21 @@ export class CheatingDaddyApp extends LitElement {
         const h = Math.floor(elapsed / 3600);
         const m = Math.floor((elapsed % 3600) / 60);
         const s = elapsed % 60;
-        const pad = n => String(n).padStart(2, '0');
+        const pad = (n: number) => String(n).padStart(2, '0');
         if (h > 0) return `${h}:${pad(m)}:${pad(s)}`;
         return `${m}:${pad(s)}`;
     }
 
     // ── Status & Responses ──
 
-    setStatus(text) {
+    setStatus(text: string) {
         this.statusText = text;
         if (text.includes('Ready') || text.includes('Listening') || text.includes('Error')) {
             this._currentResponseIsComplete = true;
         }
     }
 
-    addNewResponse(response) {
+    addNewResponse(response: string) {
         const wasOnLatest = this.currentResponseIndex === this.responses.length - 1;
         this.responses = [...this.responses, response];
         if (wasOnLatest || this.currentResponseIndex === -1) {
@@ -545,7 +570,7 @@ export class CheatingDaddyApp extends LitElement {
         this.requestUpdate();
     }
 
-    updateCurrentResponse(response) {
+    updateCurrentResponse(response: string) {
         if (this.responses.length > 0) {
             this.responses = [...this.responses.slice(0, -1), response];
         } else {
@@ -556,7 +581,7 @@ export class CheatingDaddyApp extends LitElement {
 
     // ── Navigation ──
 
-    navigate(view) {
+    navigate(view: string) {
         this.currentView = view;
         this.requestUpdate();
     }
@@ -602,37 +627,25 @@ export class CheatingDaddyApp extends LitElement {
         if (providerMode === 'cloud') {
             const creds = await cheatingDaddy.storage.getCredentials();
             if (!creds.cloudToken || creds.cloudToken.trim() === '') {
-                const mainView = this.shadowRoot.querySelector('main-view');
-                if (mainView && mainView.triggerApiKeyError) {
-                    mainView.triggerApiKeyError();
-                }
+                this._triggerMainViewApiKeyError();
                 return;
             }
 
             const success = await cheatingDaddy.initializeCloud(this.selectedProfile);
             if (!success) {
-                const mainView = this.shadowRoot.querySelector('main-view');
-                if (mainView && mainView.triggerApiKeyError) {
-                    mainView.triggerApiKeyError();
-                }
+                this._triggerMainViewApiKeyError();
                 return;
             }
         } else if (providerMode === 'local') {
             const success = await cheatingDaddy.initializeLocal(this.selectedProfile);
             if (!success) {
-                const mainView = this.shadowRoot.querySelector('main-view');
-                if (mainView && mainView.triggerApiKeyError) {
-                    mainView.triggerApiKeyError();
-                }
+                this._triggerMainViewApiKeyError();
                 return;
             }
         } else {
             const apiKey = await cheatingDaddy.storage.getApiKey();
             if (!apiKey || apiKey === '') {
-                const mainView = this.shadowRoot.querySelector('main-view');
-                if (mainView && mainView.triggerApiKeyError) {
-                    mainView.triggerApiKeyError();
-                }
+                this._triggerMainViewApiKeyError();
                 return;
             }
 
@@ -646,6 +659,11 @@ export class CheatingDaddyApp extends LitElement {
         this.sessionActive = true;
         this.currentView = 'assistant';
         this._startTimer();
+    }
+
+    private _triggerMainViewApiKeyError() {
+        const mainView = this.shadowRoot?.querySelector('main-view') as (Element & { triggerApiKeyError?: () => void }) | null;
+        mainView?.triggerApiKeyError?.();
     }
 
     async handleCancelLocalDownload() {
@@ -668,40 +686,40 @@ export class CheatingDaddyApp extends LitElement {
 
     // ── Settings handlers ──
 
-    async handleProfileChange(profile) {
+    async handleProfileChange(profile: string) {
         this.selectedProfile = profile;
         await cheatingDaddy.storage.updatePreference('selectedProfile', profile);
     }
 
-    async handleLanguageChange(language) {
+    async handleLanguageChange(language: string) {
         this.selectedLanguage = language;
         await cheatingDaddy.storage.updatePreference('selectedLanguage', language);
     }
 
-    async handleScreenshotIntervalChange(interval) {
+    async handleScreenshotIntervalChange(interval: string) {
         this.selectedScreenshotInterval = interval;
         await cheatingDaddy.storage.updatePreference('selectedScreenshotInterval', interval);
     }
 
-    async handleImageQualityChange(quality) {
+    async handleImageQualityChange(quality: string) {
         this.selectedImageQuality = quality;
         await cheatingDaddy.storage.updatePreference('selectedImageQuality', quality);
     }
 
-    async handleLayoutModeChange(layoutMode) {
+    async handleLayoutModeChange(layoutMode: string) {
         this.layoutMode = layoutMode;
         await cheatingDaddy.storage.updateConfig('layout', layoutMode);
         this.requestUpdate();
     }
 
-    async handleExternalLinkClick(url) {
+    async handleExternalLinkClick(url: string) {
         if (window.require) {
             const { ipcRenderer } = window.require('electron');
             await ipcRenderer.invoke('open-external', url);
         }
     }
 
-    async handleSendText(message) {
+    async handleSendText(message: string) {
         const result = await window.cheatingDaddy.sendTextMessage(message);
         if (!result.success) {
             this.setStatus('Error sending message: ' + result.error);
@@ -711,7 +729,7 @@ export class CheatingDaddyApp extends LitElement {
         }
     }
 
-    handleResponseIndexChanged(e) {
+    handleResponseIndexChanged(e: CustomEvent<{ index: number }>) {
         this.currentResponseIndex = e.detail.index;
         this.shouldAnimateResponse = false;
         this.requestUpdate();
@@ -721,7 +739,7 @@ export class CheatingDaddyApp extends LitElement {
         this.currentView = 'main';
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: Map<string, unknown>) {
         super.updated(changedProperties);
 
         if (changedProperties.has('currentView') && window.require) {
@@ -749,9 +767,9 @@ export class CheatingDaddyApp extends LitElement {
                 return html`
                     <main-view
                         .selectedProfile=${this.selectedProfile}
-                        .onProfileChange=${p => this.handleProfileChange(p)}
+                        .onProfileChange=${(p: string) => this.handleProfileChange(p)}
                         .onStart=${() => this.handleStart()}
-                        .onExternalLink=${url => this.handleExternalLinkClick(url)}
+                        .onExternalLink=${(url: string) => this.handleExternalLinkClick(url)}
                         .whisperDownloading=${this._whisperDownloading}
                         .downloadProgress=${this._localAiDownloadProgress}
                         .onCancelDownload=${() => this.handleCancelLocalDownload()}
@@ -762,7 +780,7 @@ export class CheatingDaddyApp extends LitElement {
                 return html`
                     <ai-customize-view
                         .selectedProfile=${this.selectedProfile}
-                        .onProfileChange=${p => this.handleProfileChange(p)}
+                        .onProfileChange=${(p: string) => this.handleProfileChange(p)}
                     ></ai-customize-view>
                 `;
 
@@ -774,11 +792,11 @@ export class CheatingDaddyApp extends LitElement {
                         .selectedScreenshotInterval=${this.selectedScreenshotInterval}
                         .selectedImageQuality=${this.selectedImageQuality}
                         .layoutMode=${this.layoutMode}
-                        .onProfileChange=${p => this.handleProfileChange(p)}
-                        .onLanguageChange=${l => this.handleLanguageChange(l)}
-                        .onScreenshotIntervalChange=${i => this.handleScreenshotIntervalChange(i)}
-                        .onImageQualityChange=${q => this.handleImageQualityChange(q)}
-                        .onLayoutModeChange=${lm => this.handleLayoutModeChange(lm)}
+                        .onProfileChange=${(p: string) => this.handleProfileChange(p)}
+                        .onLanguageChange=${(l: string) => this.handleLanguageChange(l)}
+                        .onScreenshotIntervalChange=${(i: string) => this.handleScreenshotIntervalChange(i)}
+                        .onImageQualityChange=${(q: string) => this.handleImageQualityChange(q)}
+                        .onLayoutModeChange=${(lm: string) => this.handleLayoutModeChange(lm)}
                     ></customize-view>
                 `;
 
@@ -786,7 +804,7 @@ export class CheatingDaddyApp extends LitElement {
                 return html`<feedback-view></feedback-view>`;
 
             case 'help':
-                return html`<help-view .onExternalLinkClick=${url => this.handleExternalLinkClick(url)}></help-view>`;
+                return html`<help-view .onExternalLinkClick=${(url: string) => this.handleExternalLinkClick(url)}></help-view>`;
 
             case 'history':
                 return html`<history-view></history-view>`;
@@ -797,7 +815,7 @@ export class CheatingDaddyApp extends LitElement {
                         .responses=${this.responses}
                         .currentResponseIndex=${this.currentResponseIndex}
                         .selectedProfile=${this.selectedProfile}
-                        .onSendText=${msg => this.handleSendText(msg)}
+                        .onSendText=${(msg: string) => this.handleSendText(msg)}
                         .shouldAnimateResponse=${this.shouldAnimateResponse}
                         @response-index-changed=${this.handleResponseIndexChanged}
                         @response-animation-complete=${() => {
@@ -933,7 +951,7 @@ export class CheatingDaddyApp extends LitElement {
     renderLiveBar() {
         if (!this._isLiveMode()) return '';
 
-        const profileLabels = {
+        const profileLabels: Record<string, string> = {
             interview: 'Interview',
             sales: 'Sales Call',
             meeting: 'Meeting',

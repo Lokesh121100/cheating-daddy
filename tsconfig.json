@@ -12,5 +12,5 @@
         "types": ["node"]
     },
     "include": ["src/**/*.ts", "tests/**/*.ts"],
-    "exclude": ["node_modules", "src/assets"]
+    "exclude": ["node_modules", "src/assets", "src/components", "src/utils/renderer.ts"]
 }

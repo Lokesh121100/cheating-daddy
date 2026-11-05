@@ -1,4 +1,6 @@
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
+import type { TemplateResult } from 'lit';
+import type { Credentials } from '../../shared/ipc-types';
 
 const LOCAL_LLM_PRESETS = [
     { value: 'unsloth/Qwen3.5-0.8B-GGUF:Q4_K_M', label: 'Qwen 3.5 0.8B Q4 — 0.74 GB · Fastest' },
@@ -711,6 +713,37 @@ export class MainView extends LitElement {
         _showLocalHelp: { state: true },
     };
 
+    declare onStart: () => void;
+    declare onExternalLink: (url: string) => void;
+    declare selectedProfile: string;
+    declare onProfileChange: (profile: string) => void;
+    declare isInitializing: boolean;
+    declare whisperDownloading: boolean;
+    declare downloadProgress: { active: boolean; label: string; percentage: number | null };
+    declare onCancelDownload: () => void;
+
+    declare _mode: string;
+    declare _token: string;
+    declare _geminiKey: string;
+    declare _groqKey: string;
+    declare _openaiKey: string;
+    declare _geminiLiveModel: string;
+    declare _groqModel: string;
+    declare _groqImageModel: string;
+    declare _disableGroqThinking: boolean;
+    declare _tokenError: boolean;
+    declare _keyError: boolean;
+    declare _localLlmModel: string;
+    declare _useCustomLocalLlmModel: boolean;
+    declare _whisperModel: string;
+    declare _showLocalHelp: boolean;
+
+    private _animId: number | null;
+    private _time: number;
+    private _mouseX: number;
+    private _mouseY: number;
+    private boundKeydownHandler: (e: KeyboardEvent) => void;
+
     constructor() {
         super();
         this.onStart = () => {};
@@ -752,7 +785,7 @@ export class MainView extends LitElement {
             const [config, prefs, creds] = await Promise.all([
                 cheatingDaddy.storage.getConfig(),
                 cheatingDaddy.storage.getPreferences(),
-                cheatingDaddy.storage.getCredentials().catch(() => ({})),
+                cheatingDaddy.storage.getCredentials().catch(() => ({}) as Partial<Credentials>),
             ]);
 
             const storedMode = prefs.providerMode || 'byok';
@@ -794,7 +827,7 @@ export class MainView extends LitElement {
         if (this._animId) cancelAnimationFrame(this._animId);
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: Map<string, unknown>) {
         super.updated(changedProperties);
         if (changedProperties.has('_mode')) {
             // Stop old animation when switching modes
@@ -806,15 +839,15 @@ export class MainView extends LitElement {
     }
 
     _initButtonAurora() {
-        const btn = this.shadowRoot.querySelector('.start-button');
-        const aurora = this.shadowRoot.querySelector('canvas.btn-aurora');
-        const dither = this.shadowRoot.querySelector('canvas.btn-dither');
+        const btn = this.shadowRoot?.querySelector('.start-button') as HTMLElement | null;
+        const aurora = this.shadowRoot?.querySelector('canvas.btn-aurora') as HTMLCanvasElement | null;
+        const dither = this.shadowRoot?.querySelector('canvas.btn-dither') as HTMLCanvasElement | null;
         if (!aurora || !dither || !btn) return;
 
         // Mouse tracking
         this._mouseX = -1;
         this._mouseY = -1;
-        btn.addEventListener('mousemove', e => {
+        btn.addEventListener('mousemove', (e: MouseEvent) => {
             const rect = btn.getBoundingClientRect();
             this._mouseX = (e.clientX - rect.left) / rect.width;
             this._mouseY = (e.clientY - rect.top) / rect.height;
@@ -831,6 +864,7 @@ export class MainView extends LitElement {
         dither.width = cols;
         dither.height = rows;
         const dCtx = dither.getContext('2d');
+        if (!dCtx) return;
         const img = dCtx.createImageData(cols, rows);
         for (let i = 0; i < img.data.length; i += 4) {
             const v = Math.random() > 0.5 ? 255 : 0;
@@ -843,6 +877,7 @@ export class MainView extends LitElement {
 
         // Aurora
         const ctx = aurora.getContext('2d');
+        if (!ctx) return;
         const scale = 0.4;
         aurora.width = Math.floor(aurora.offsetWidth * scale);
         aurora.height = Math.floor(aurora.offsetHeight * scale);
@@ -899,7 +934,7 @@ export class MainView extends LitElement {
         draw();
     }
 
-    _handleKeydown(e) {
+    _handleKeydown(e: KeyboardEvent) {
         if (e.key === 'Escape' && this._showLocalHelp) {
             this._closeLocalHelp();
             return;
@@ -914,7 +949,7 @@ export class MainView extends LitElement {
 
     // ── Persistence ──
 
-    async _saveMode(mode) {
+    async _saveMode(mode: string) {
         this._mode = mode;
         this._tokenError = false;
         this._keyError = false;
@@ -922,69 +957,69 @@ export class MainView extends LitElement {
         this.requestUpdate();
     }
 
-    async _saveToken(val) {
+    async _saveToken(val: string) {
         this._token = val;
         this._tokenError = false;
         try {
-            const creds = await cheatingDaddy.storage.getCredentials().catch(() => ({}));
+            const creds = await cheatingDaddy.storage.getCredentials().catch(() => ({}) as Partial<Credentials>);
             await cheatingDaddy.storage.setCredentials({ ...creds, cloudToken: val });
         } catch (e) {}
         this.requestUpdate();
     }
 
-    async _saveGeminiKey(val) {
+    async _saveGeminiKey(val: string) {
         this._geminiKey = val;
         this._keyError = false;
         await cheatingDaddy.storage.setApiKey(val);
         this.requestUpdate();
     }
 
-    async _saveGroqKey(val) {
+    async _saveGroqKey(val: string) {
         this._groqKey = val;
         await cheatingDaddy.storage.setGroqApiKey(val);
         this.requestUpdate();
     }
 
-    async _saveGeminiLiveModel(val) {
+    async _saveGeminiLiveModel(val: string) {
         this._geminiLiveModel = val;
         await cheatingDaddy.storage.updateConfig('geminiLiveModel', val);
         this.requestUpdate();
     }
 
-    async _saveGroqModel(val) {
+    async _saveGroqModel(val: string) {
         this._groqModel = val;
         await cheatingDaddy.storage.updateConfig('groqModel', val);
         this.requestUpdate();
     }
 
-    async _saveGroqImageModel(val) {
+    async _saveGroqImageModel(val: string) {
         this._groqImageModel = val;
         await cheatingDaddy.storage.updateConfig('groqImageModel', val);
         this.requestUpdate();
     }
 
-    async _saveDisableGroqThinking(disabled) {
+    async _saveDisableGroqThinking(disabled: boolean) {
         this._disableGroqThinking = disabled;
         await cheatingDaddy.storage.updateConfig('disableGroqThinking', disabled);
         this.requestUpdate();
     }
 
-    async _saveOpenaiKey(val) {
+    async _saveOpenaiKey(val: string) {
         this._openaiKey = val;
         try {
-            const creds = await cheatingDaddy.storage.getCredentials().catch(() => ({}));
+            const creds = await cheatingDaddy.storage.getCredentials().catch(() => ({}) as Partial<Credentials>);
             await cheatingDaddy.storage.setCredentials({ ...creds, openaiKey: val });
         } catch (e) {}
         this.requestUpdate();
     }
 
-    async _saveLocalLlmModel(val) {
+    async _saveLocalLlmModel(val: string) {
         this._localLlmModel = val;
         await cheatingDaddy.storage.updatePreference('localLlmModel', val);
         this.requestUpdate();
     }
 
-    async _selectLocalLlmModel(value) {
+    async _selectLocalLlmModel(value: string) {
         if (value === 'custom') {
             this._useCustomLocalLlmModel = true;
             this.requestUpdate();
@@ -995,14 +1030,14 @@ export class MainView extends LitElement {
         await this._saveLocalLlmModel(value);
     }
 
-    async _saveWhisperModel(val) {
+    async _saveWhisperModel(val: string) {
         this._whisperModel = val;
         await cheatingDaddy.storage.updatePreference('whisperModel', val);
         this.requestUpdate();
     }
 
-    _handleProfileChange(e) {
-        this.onProfileChange(e.target.value);
+    _handleProfileChange(e: Event) {
+        this.onProfileChange((e.target as HTMLSelectElement).value);
     }
 
     _openLocalHelp() {
@@ -1013,7 +1048,7 @@ export class MainView extends LitElement {
         this._showLocalHelp = false;
     }
 
-    _handleHelpDialogClick(e) {
+    _handleHelpDialogClick(e: Event) {
         e.stopPropagation();
     }
 
@@ -1173,7 +1208,7 @@ export class MainView extends LitElement {
                             type="password"
                             placeholder="Required"
                             .value=${this._geminiKey}
-                            @input=${e => this._saveGeminiKey(e.target.value)}
+                            @input=${(e: Event) => this._saveGeminiKey((e.target as HTMLInputElement).value)}
                             class=${this._keyError ? 'error' : ''}
                         />
                         <div class="form-hint">
@@ -1183,7 +1218,7 @@ export class MainView extends LitElement {
 
                     <div class="form-group">
                         <label class="form-label">Gemini Live Model</label>
-                        <input type="text" .value=${this._geminiLiveModel} @input=${e => this._saveGeminiLiveModel(e.target.value)} />
+                        <input type="text" .value=${this._geminiLiveModel} @input=${(e: Event) => this._saveGeminiLiveModel((e.target as HTMLInputElement).value)} />
                     </div>
                 </div>
             </details>
@@ -1199,7 +1234,7 @@ export class MainView extends LitElement {
                 <div class="config-content">
                     <div class="form-group">
                         <label class="form-label">Groq API Key</label>
-                        <input type="password" placeholder="Optional" .value=${this._groqKey} @input=${e => this._saveGroqKey(e.target.value)} />
+                        <input type="password" placeholder="Optional" .value=${this._groqKey} @input=${(e: Event) => this._saveGroqKey((e.target as HTMLInputElement).value)} />
                         <div class="form-hint">
                             <span class="link" @click=${() => this.onExternalLink('https://console.groq.com/keys')}>Get Groq key</span>
                         </div>
@@ -1207,19 +1242,19 @@ export class MainView extends LitElement {
 
                     <div class="form-group">
                         <label class="form-label">Groq Model</label>
-                        <input type="text" .value=${this._groqModel} @input=${e => this._saveGroqModel(e.target.value)} />
+                        <input type="text" .value=${this._groqModel} @input=${(e: Event) => this._saveGroqModel((e.target as HTMLInputElement).value)} />
                     </div>
 
                     <div class="form-group">
                         <label class="form-label">Groq Image Model</label>
-                        <input type="text" .value=${this._groqImageModel} @input=${e => this._saveGroqImageModel(e.target.value)} />
+                        <input type="text" .value=${this._groqImageModel} @input=${(e: Event) => this._saveGroqImageModel((e.target as HTMLInputElement).value)} />
                     </div>
 
                     <label class="config-checkbox">
                         <input
                             type="checkbox"
                             .checked=${this._disableGroqThinking}
-                            @change=${e => this._saveDisableGroqThinking(e.target.checked)}
+                            @change=${(e: Event) => this._saveDisableGroqThinking((e.target as HTMLInputElement).checked)}
                         />
                         <span class="config-checkbox-text">
                             <span class="config-summary-title">Disable thinking</span>
@@ -1260,7 +1295,7 @@ export class MainView extends LitElement {
                         <label class="form-label">Model</label>
                         <select
                             .value=${this._useCustomLocalLlmModel ? 'custom' : this._localLlmModel}
-                            @change=${event => this._selectLocalLlmModel(event.target.value)}
+                            @change=${(event: Event) => this._selectLocalLlmModel((event.target as HTMLSelectElement).value)}
                         >
                             ${LOCAL_LLM_PRESETS.map(preset => html`<option value=${preset.value}>${preset.label}</option>`)}
                             <option value="custom">Custom Hugging Face model or local GGUF…</option>
@@ -1272,7 +1307,7 @@ export class MainView extends LitElement {
                                           type="text"
                                           placeholder="owner/repository:quant or /absolute/model.gguf"
                                           .value=${this._localLlmModel}
-                                          @input=${event => this._saveLocalLlmModel(event.target.value)}
+                                          @input=${(event: Event) => this._saveLocalLlmModel((event.target as HTMLInputElement).value)}
                                       />
                                   `
                                 : ''
@@ -1296,7 +1331,7 @@ export class MainView extends LitElement {
                             <label class="form-label">Whisper Model</label>
                             ${this.whisperDownloading ? html`<div class="whisper-spinner"></div>` : ''}
                         </div>
-                        <select .value=${this._whisperModel} @change=${e => this._saveWhisperModel(e.target.value)}>
+                        <select .value=${this._whisperModel} @change=${(e: Event) => this._saveWhisperModel((e.target as HTMLSelectElement).value)}>
                             <option value="tiny.en" ?selected=${this._whisperModel === 'tiny.en'}>Tiny English (75 MB, fastest)</option>
                             <option value="base.en" ?selected=${this._whisperModel === 'base.en'}>Base English (142 MB)</option>
                             <option value="small.en" ?selected=${this._whisperModel === 'small.en'}>Small English (466 MB, most accurate)</option>
@@ -1350,7 +1385,7 @@ export class MainView extends LitElement {
         `;
     }
 
-    _renderLocalHelp(closeIcon) {
+    _renderLocalHelp(closeIcon: TemplateResult) {
         return html`
             <div class="help-dialog-backdrop" @click=${this._closeLocalHelp}>
                 <section class="help-dialog" role="dialog" aria-modal="true" aria-labelledby="local-help-title" @click=${this._handleHelpDialogClick}>
