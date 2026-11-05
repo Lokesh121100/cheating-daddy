@@ -1,5 +1,6 @@
 import { html, css, LitElement } from '../../assets/lit-core-2.7.4.min.js';
 import { unifiedPageStyles } from './sharedPageStyles.js';
+import type { Preferences } from '../../shared/ipc-types';
 
 export class CustomizeView extends LitElement {
     static styles = [
@@ -195,6 +196,27 @@ export class CustomizeView extends LitElement {
         clearStatusType: { type: String },
     };
 
+    declare selectedProfile: string;
+    declare selectedLanguage: string;
+    declare selectedImageQuality: string;
+    declare layoutMode: string;
+    declare keybinds: Record<string, string>;
+    declare googleSearchEnabled: boolean;
+    declare backgroundTransparency: number;
+    declare fontSize: number;
+    declare theme: string;
+    declare onProfileChange: (profile: string) => void;
+    declare onLanguageChange: (language: string) => void;
+    declare onImageQualityChange: (quality: string) => void;
+    declare onLayoutModeChange: (layout: string) => void;
+    declare isClearing: boolean;
+    declare isRestoring: boolean;
+    declare clearStatusMessage: string;
+    declare clearStatusType: string;
+
+    private audioMode: string;
+    private customPrompt: string;
+
     constructor() {
         super();
         this.selectedProfile = 'interview';
@@ -330,46 +352,46 @@ export class CustomizeView extends LitElement {
         }
     }
 
-    handleProfileSelect(e) {
-        this.selectedProfile = e.target.value;
+    handleProfileSelect(e: Event) {
+        this.selectedProfile = (e.target as HTMLSelectElement).value;
         this.onProfileChange(this.selectedProfile);
     }
 
-    handleLanguageSelect(e) {
-        this.selectedLanguage = e.target.value;
+    handleLanguageSelect(e: Event) {
+        this.selectedLanguage = (e.target as HTMLSelectElement).value;
         this.onLanguageChange(this.selectedLanguage);
     }
 
-    handleImageQualitySelect(e) {
-        this.selectedImageQuality = e.target.value;
+    handleImageQualitySelect(e: Event) {
+        this.selectedImageQuality = (e.target as HTMLSelectElement).value;
         this.onImageQualityChange(this.selectedImageQuality);
     }
 
-    handleLayoutModeSelect(e) {
-        this.layoutMode = e.target.value;
+    handleLayoutModeSelect(e: Event) {
+        this.layoutMode = (e.target as HTMLSelectElement).value;
         this.onLayoutModeChange(this.layoutMode);
     }
 
-    async handleCustomPromptInput(e) {
-        this.customPrompt = e.target.value;
+    async handleCustomPromptInput(e: Event) {
+        this.customPrompt = (e.target as HTMLTextAreaElement).value;
         await cheatingDaddy.storage.updatePreference('customPrompt', this.customPrompt);
     }
 
-    async handleAudioModeSelect(e) {
-        this.audioMode = e.target.value;
+    async handleAudioModeSelect(e: Event) {
+        this.audioMode = (e.target as HTMLSelectElement).value;
         await cheatingDaddy.storage.updatePreference('audioMode', this.audioMode);
         this.requestUpdate();
     }
 
-    async handleThemeChange(e) {
-        this.theme = e.target.value;
+    async handleThemeChange(e: Event) {
+        this.theme = (e.target as HTMLSelectElement).value;
         await cheatingDaddy.theme.save(this.theme);
         this.updateBackgroundAppearance();
         this.requestUpdate();
     }
 
-    async handleGoogleSearchChange(e) {
-        this.googleSearchEnabled = e.target.checked;
+    async handleGoogleSearchChange(e: Event) {
+        this.googleSearchEnabled = (e.target as HTMLInputElement).checked;
         await cheatingDaddy.storage.updatePreference('googleSearchEnabled', this.googleSearchEnabled);
         if (window.require) {
             try {
@@ -382,8 +404,8 @@ export class CustomizeView extends LitElement {
         this.requestUpdate();
     }
 
-    async handleBackgroundTransparencyChange(e) {
-        this.backgroundTransparency = parseFloat(e.target.value);
+    async handleBackgroundTransparencyChange(e: Event) {
+        this.backgroundTransparency = parseFloat((e.target as HTMLInputElement).value);
         await cheatingDaddy.storage.updatePreference('backgroundTransparency', this.backgroundTransparency);
         this.updateBackgroundAppearance();
         this.requestUpdate();
@@ -394,8 +416,8 @@ export class CustomizeView extends LitElement {
         cheatingDaddy.theme.applyBackgrounds(colors.background, this.backgroundTransparency);
     }
 
-    async handleFontSizeChange(e) {
-        this.fontSize = parseInt(e.target.value, 10);
+    async handleFontSizeChange(e: Event) {
+        this.fontSize = parseInt((e.target as HTMLInputElement).value, 10);
         await cheatingDaddy.storage.updatePreference('fontSize', this.fontSize);
         this.updateFontSize();
         this.requestUpdate();
@@ -405,20 +427,21 @@ export class CustomizeView extends LitElement {
         document.documentElement.style.setProperty('--response-font-size', `${this.fontSize}px`);
     }
 
-    handleKeybindChange(action, value) {
+    handleKeybindChange(action: string, value: string) {
         this.keybinds = { ...this.keybinds, [action]: value };
         this.saveKeybinds();
         this.requestUpdate();
     }
 
-    handleKeybindFocus(e) {
-        e.target.placeholder = 'Press key combination...';
-        e.target.select();
+    handleKeybindFocus(e: Event) {
+        const target = e.target as HTMLInputElement;
+        target.placeholder = 'Press key combination...';
+        target.select();
     }
 
-    handleKeybindInput(e) {
+    handleKeybindInput(e: KeyboardEvent) {
         e.preventDefault();
-        const modifiers = [];
+        const modifiers: string[] = [];
         if (e.ctrlKey) modifiers.push('Ctrl');
         if (e.metaKey) modifiers.push('Cmd');
         if (e.altKey) modifiers.push('Alt');
@@ -454,11 +477,13 @@ export class CustomizeView extends LitElement {
 
         if (['Control', 'Meta', 'Alt', 'Shift'].includes(e.key)) return;
 
-        const action = e.target.dataset.action;
+        const target = e.target as HTMLInputElement;
+        const action = target.dataset.action;
+        if (!action) return;
         const keybind = [...modifiers, mainKey].join('+');
         this.handleKeybindChange(action, keybind);
-        e.target.value = keybind;
-        e.target.blur();
+        target.value = keybind;
+        target.blur();
     }
 
     async resetKeybinds() {
@@ -479,7 +504,19 @@ export class CustomizeView extends LitElement {
         this.requestUpdate();
         try {
             // Restore all preferences to defaults
-            const defaults = {
+            const defaults: Pick<
+                Preferences,
+                | 'customPrompt'
+                | 'selectedProfile'
+                | 'selectedLanguage'
+                | 'selectedScreenshotInterval'
+                | 'selectedImageQuality'
+                | 'audioMode'
+                | 'fontSize'
+                | 'backgroundTransparency'
+                | 'googleSearchEnabled'
+                | 'theme'
+            > = {
                 customPrompt: '',
                 selectedProfile: 'interview',
                 selectedLanguage: 'en-US',
@@ -491,7 +528,7 @@ export class CustomizeView extends LitElement {
                 googleSearchEnabled: false,
                 theme: 'dark',
             };
-            for (const [key, value] of Object.entries(defaults)) {
+            for (const [key, value] of Object.entries(defaults) as [keyof Preferences, Preferences[keyof Preferences]][]) {
                 await cheatingDaddy.storage.updatePreference(key, value);
             }
 
@@ -528,7 +565,7 @@ export class CustomizeView extends LitElement {
             this.clearStatusType = 'success';
         } catch (error) {
             console.error('Error restoring settings:', error);
-            this.clearStatusMessage = `Error restoring settings: ${error.message}`;
+            this.clearStatusMessage = `Error restoring settings: ${error instanceof Error ? error.message : error}`;
             this.clearStatusType = 'error';
         } finally {
             this.isRestoring = false;
@@ -559,7 +596,7 @@ export class CustomizeView extends LitElement {
             }, 2000);
         } catch (error) {
             console.error('Error clearing data:', error);
-            this.clearStatusMessage = `Error clearing data: ${error.message}`;
+            this.clearStatusMessage = `Error clearing data: ${error instanceof Error ? error.message : error}`;
             this.clearStatusType = 'error';
         } finally {
             this.isClearing = false;

@@ -108,4 +108,5 @@ src/components/app/AppHeader.js
 src/components/views/OnboardingView.js
 src/components/views/HistoryView.js
 src/components/views/AssistantView.js
+src/components/views/CustomizeView.js
 src/utils/cloud.js

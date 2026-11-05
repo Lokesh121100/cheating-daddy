@@ -58,9 +58,13 @@ export interface Preferences {
     selectedImageQuality: string;
     advancedMode: boolean;
     audioMode: string;
-    fontSize: string;
+    // Pixel size (12-32), per every real consumer (CustomizeView.ts). The
+    // original default below was the string 'medium', which nothing ever
+    // actually read as a string -- fixed to match real usage.
+    fontSize: number;
     backgroundTransparency: number;
     googleSearchEnabled: boolean;
     localLlmModel: string;
     whisperModel: string;
+    theme: string;
 }

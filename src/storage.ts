@@ -54,11 +54,12 @@ const DEFAULT_PREFERENCES: Preferences = {
     selectedImageQuality: 'medium',
     advancedMode: false,
     audioMode: 'speaker_only',
-    fontSize: 'medium',
+    fontSize: 20,
     backgroundTransparency: 0.8,
     googleSearchEnabled: false,
     localLlmModel: 'unsloth/Qwen3.5-4B-GGUF:Q4_K_M',
     whisperModel: 'tiny.en',
+    theme: 'dark',
 };
 
 const DEFAULT_KEYBINDS: Keybinds = null; // null means use system defaults

@@ -14,13 +14,46 @@ interface CheatingDaddyStorageApi {
     getPreferences(): Promise<Preferences>;
     updatePreference<K extends keyof Preferences>(key: K, value: Preferences[K]): Promise<IpcResult>;
     getKeybinds(): Promise<Keybinds>;
+    setKeybinds(keybinds: Keybinds): Promise<IpcResult>;
     updateConfig<K extends keyof AppConfig>(key: K, value: AppConfig[K]): Promise<IpcResult>;
     getAllSessions(): Promise<SessionSummary[]>;
     getSession(sessionId: string): Promise<SessionRecord | null>;
+    clearAll(): Promise<IpcResult>;
+}
+
+interface ThemeColors {
+    background: string;
+    text: string;
+    textSecondary: string;
+    textMuted: string;
+    border: string;
+    accent: string;
+    btnPrimaryBg: string;
+    btnPrimaryText: string;
+    btnPrimaryHover: string;
+    tooltipBg: string;
+    tooltipText: string;
+    keyBg: string;
+}
+
+interface ThemeOption {
+    value: string;
+    name: string;
+    colors: ThemeColors;
+}
+
+interface CheatingDaddyThemeApi {
+    getAll(): ThemeOption[];
+    get(themeName: string): ThemeColors;
+    apply(themeName: string, alpha?: number): void;
+    applyBackgrounds(backgroundColor: string, alpha?: number): void;
+    load(): Promise<string>;
+    save(themeName: string): Promise<void>;
 }
 
 interface CheatingDaddyGlobal {
     storage: CheatingDaddyStorageApi;
+    theme: CheatingDaddyThemeApi;
     isMacOS: boolean;
     getVersion(): Promise<string>;
 }
