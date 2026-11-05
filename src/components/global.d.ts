@@ -19,6 +19,7 @@ interface CheatingDaddyStorageApi {
 interface CheatingDaddyGlobal {
     storage: CheatingDaddyStorageApi;
     isMacOS: boolean;
+    getVersion(): Promise<string>;
 }
 
 declare global {
@@ -27,6 +28,11 @@ declare global {
     }
 
     const cheatingDaddy: CheatingDaddyGlobal;
+
+    // Renderer files call require('electron') directly (nodeIntegration is
+    // enabled for this app's renderer). This narrowly types just that one
+    // usage, verified against electron's own bundled types.
+    function require(id: 'electron'): typeof import('electron');
 }
 
 export {};

@@ -136,6 +136,19 @@ export class AppHeader extends LitElement {
         updateAvailable: { type: Boolean },
     };
 
+    declare currentView: string;
+    declare statusText: string;
+    declare startTime: number | null;
+    declare onCustomizeClick: () => void;
+    declare onHelpClick: () => void;
+    declare onHistoryClick: () => void;
+    declare onCloseClick: () => void;
+    declare onBackClick: () => void;
+    declare onHideToggleClick: () => void;
+    declare isClickThrough: boolean;
+    declare updateAvailable: boolean;
+    private _timerInterval: ReturnType<typeof setInterval> | null;
+
     constructor() {
         super();
         this.currentView = 'main';
@@ -171,11 +184,11 @@ export class AppHeader extends LitElement {
                 this.updateAvailable = true;
             }
         } catch (err) {
-            console.log('Update check failed:', err.message);
+            console.log('Update check failed:', err instanceof Error ? err.message : err);
         }
     }
 
-    _isNewerVersion(remote, current) {
+    _isNewerVersion(remote: string, current: string) {
         const remoteParts = remote.split('.').map(Number);
         const currentParts = current.split('.').map(Number);
 
@@ -198,7 +211,7 @@ export class AppHeader extends LitElement {
         this._stopTimer();
     }
 
-    updated(changedProperties) {
+    updated(changedProperties: Map<string, unknown>) {
         super.updated(changedProperties);
 
         // Start/stop timer based on view change
@@ -241,7 +254,7 @@ export class AppHeader extends LitElement {
     }
 
     getViewTitle() {
-        const titles = {
+        const titles: Record<string, string> = {
             onboarding: 'Welcome to Cheating Daddy',
             main: 'Cheating Daddy',
             customize: 'Customize',

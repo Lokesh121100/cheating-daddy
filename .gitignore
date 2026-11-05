@@ -104,4 +104,5 @@ src/components/views/FeedbackView.js
 src/components/views/AICustomizeView.js
 src/shared/ipc-types.js
 src/components/views/HelpView.js
+src/components/app/AppHeader.js
 src/utils/cloud.js
