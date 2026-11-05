@@ -6,6 +6,16 @@
 
 export type Keybinds = Record<string, string> | null;
 
+export interface AppConfig {
+    configVersion: number;
+    onboarded: boolean;
+    layout: string;
+    geminiLiveModel: string;
+    groqModel: string;
+    groqImageModel: string;
+    disableGroqThinking: boolean;
+}
+
 export interface Preferences {
     customPrompt: string;
     providerMode: string;

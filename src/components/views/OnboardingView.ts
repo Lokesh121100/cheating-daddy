@@ -150,6 +150,12 @@ export class OnboardingView extends LitElement {
         onComplete: { type: Function },
     };
 
+    declare currentSlide: number;
+    declare contextText: string;
+    declare onComplete: () => void;
+    private _animId: number | null;
+    private _time: number;
+
     constructor() {
         super();
         this.currentSlide = 0;
@@ -170,7 +176,7 @@ export class OnboardingView extends LitElement {
     }
 
     _drawDither() {
-        const canvas = this.shadowRoot.querySelector('canvas.dither');
+        const canvas = this.shadowRoot?.querySelector('canvas.dither') as HTMLCanvasElement | null;
         if (!canvas) return;
         const blockSize = 5;
         const cols = Math.ceil(canvas.offsetWidth / blockSize);
@@ -178,6 +184,7 @@ export class OnboardingView extends LitElement {
         canvas.width = cols;
         canvas.height = rows;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
         const img = ctx.createImageData(cols, rows);
         for (let i = 0; i < img.data.length; i += 4) {
             const v = Math.random() > 0.5 ? 255 : 0;
@@ -190,9 +197,10 @@ export class OnboardingView extends LitElement {
     }
 
     _startAurora() {
-        const canvas = this.shadowRoot.querySelector('canvas.aurora');
+        const canvas = this.shadowRoot?.querySelector('canvas.aurora') as HTMLCanvasElement | null;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
+        if (!ctx) return;
 
         const scale = 0.35;
         const resize = () => {
@@ -296,8 +304,8 @@ export class OnboardingView extends LitElement {
         draw();
     }
 
-    handleContextInput(e) {
-        this.contextText = e.target.value;
+    handleContextInput(e: Event) {
+        this.contextText = (e.target as HTMLTextAreaElement).value;
     }
 
     async completeOnboarding() {

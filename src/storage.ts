@@ -1,21 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import type { Preferences, Keybinds } from './shared/ipc-types';
+import type { Preferences, Keybinds, AppConfig } from './shared/ipc-types';
 
-export type { Preferences, Keybinds };
+export type { Preferences, Keybinds, AppConfig };
 
 const CONFIG_VERSION = 1;
-
-export interface AppConfig {
-    configVersion: number;
-    onboarded: boolean;
-    layout: string;
-    geminiLiveModel: string;
-    groqModel: string;
-    groqImageModel: string;
-    disableGroqThinking: boolean;
-}
 
 export interface Credentials {
     apiKey: string;
